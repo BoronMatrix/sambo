@@ -1,7 +1,9 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException, Query
+from fastapi import FastAPI, File, UploadFile, HTTPException, Query,Response
 from fastapi.responses import JSONResponse
 import shutil
 import os
+import io
+import pandas as pd
 
 # micro_sam
 import os
@@ -108,23 +110,29 @@ def calculate_region_properties(labels):
     return properties
 
 
-def calculate_statistics(values):
+def calculate_statistics(properties):
     """
     计算统计值：均值、标准差、最大值、最小值、P0、P10、P50、P90、P100。
+    同时计算区域数量。
     """
-    values = np.array(values)
-    stats = {
-        "mean": np.mean(values),
-        "std": np.std(values),
-        "max": np.max(values),
-        "min": np.min(values),
-        "P0": scoreatpercentile(values, 0),
-        "P10": scoreatpercentile(values, 10),
-        "P50": scoreatpercentile(values, 50),
-        "P90": scoreatpercentile(values, 90),
-        "P100": scoreatpercentile(values, 100),
-    }
-    return stats
+    all_stats = {"region_count": len(properties)}  # 区域数量
+    
+    for key in properties[0].keys():  # 遍历属性名称
+        values = [prop[key] for prop in properties]
+        stats = {
+            "mean": np.mean(values),
+            "std": np.std(values),
+            "max": np.max(values),
+            "min": np.min(values),
+            "P0": scoreatpercentile(values, 0),
+            "P10": scoreatpercentile(values, 10),
+            "P50": scoreatpercentile(values, 50),
+            "P90": scoreatpercentile(values, 90),
+            "P100": scoreatpercentile(values, 100),
+        }
+        all_stats[key] = stats
+    
+    return all_stats
 
 app = FastAPI()
 
@@ -154,12 +162,17 @@ async def upload_image(file: UploadFile = File(...)):
     # 原始文档用file.file, 要保存用file_path
     prediction = run_automatic_instance_segmentation(file.file, ndim=2, model_type=model_choice)
 
+    regionprops = calculate_region_properties(prediction)
+
+    # 计算统计值
+    all_stats = calculate_statistics(regionprops)
+
     # 保存为二进制文件
     np.save('prediction.npy', prediction)
+    np.save('regionprops.npy', regionprops)
+    np.save('all_stats.npy', all_stats)
 
     return {"message": "图片上传成功", "file_path": file_path}
-
-
 
 # 定义一个接口来读取 prediction.npy 的指定位置值
 @app.get("/predictions/value")
@@ -170,6 +183,7 @@ async def get_prediction_value(
     try:
         # 加载 prediction.npy 文件
         predictions = np.load("prediction.npy")
+        regionprops = np.load("regionprops.npy", allow_pickle=True)
         
         # 检查数组是否为二维
         if predictions.ndim != 2:
@@ -182,8 +196,10 @@ async def get_prediction_value(
         if x < 0 or x >= rows or y < 0 or y >= cols:
             raise IndexError(f"Index ({x}, {y}) out of bounds for array with shape ({rows}, {cols}).")
         
+        label = int(predictions[x, y])
+        attribute = regionprops[label]
         # 返回指定位置的值
-        return {"value": float(predictions[x, y])}
+        return {"label": label, "attribute": attribute}
     
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="File 'prediction.npy' not found.")
@@ -191,51 +207,47 @@ async def get_prediction_value(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error reading the file: {str(e)}")
-    
 
-@app.get("/predictions/regionprops", response_model=List[Dict])
-async def get_individual_properties():
+@app.get("/stats/")
+async def get_statistics():
+    """
+    读取 all_stats.npy 文件并返回其内容。
+    """
     try:
-        # 加载 prediction.npy 文件
-        predictions = np.load("prediction.npy")
-        
-        # 确保数据是二维数组
-        if predictions.ndim != 2:
-            raise ValueError("The loaded data is not a 2D array.")
-        
-        # 计算每个区域的属性
-        properties = calculate_region_properties(predictions)
-        
-        return properties
-    
+        # 加载 all_stats.npy 文件
+        all_stats = np.load("all_stats.npy", allow_pickle=True).item()
+        return {"all_stats": all_stats}
     except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="File 'prediction.npy' not found.")
+        raise HTTPException(status_code=404, detail="File 'all_stats.npy' not found.")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing the file: {str(e)}")
-
-
-@app.get("/predictions/regionprops/stats", response_model=Dict[str, Dict])
-async def get_aggregate_statistics():
+        raise HTTPException(status_code=500, detail=f"Error reading the file: {str(e)}")
+    
+@app.get("/download-csv")
+def download_csv():
+    """
+    将 regionprops.npy 转换为 CSV 格式并提供下载。
+    """
     try:
-        # 加载 prediction.npy 文件
-        predictions = np.load("prediction.npy")
-        
-        # 确保数据是二维数组
-        if predictions.ndim != 2:
-            raise ValueError("The loaded data is not a 2D array.")
-        
-        # 计算每个区域的属性
-        properties = calculate_region_properties(predictions)
-        
-        # 提取所有属性值
-        all_stats = {}
-        for key in properties[0].keys():  # 遍历属性名称
-            values = [prop[key] for prop in properties]
-            all_stats[key] = calculate_statistics(values)
-        
-        return all_stats
-    
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="File 'prediction.npy' not found.")
+        # 使用 NumPy 加载 .npy 文件
+        data = np.load("regionprops.npy", allow_pickle=True)
+
+        # 检查数据是否是包含字典的数组
+        if not isinstance(data, np.ndarray) or not all(isinstance(item, dict) for item in data):
+            return {"error": "Data is not an array of dictionaries."}
+
+        # 将 NumPy 数组中的字典转换为 Pandas DataFrame
+        df = pd.DataFrame(data)
+
+        # 将 DataFrame 转换为 CSV 格式的字符串
+        csv_buffer = io.StringIO()
+        df.to_csv(csv_buffer, index=False)
+        csv_content = csv_buffer.getvalue()
+
+        # 返回 CSV 文件供下载
+        headers = {
+            "Content-Disposition": 'attachment; filename="all_stats.csv"',
+            "Content-Type": "text/csv",
+        }
+        return Response(content=csv_content, headers=headers)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing the file: {str(e)}")
+        return {"error": f"Failed to load or process the file: {str(e)}"}
