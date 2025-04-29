@@ -4,6 +4,7 @@ import shutil
 import os
 import io
 import pandas as pd
+import uvicorn
 
 # micro_sam
 import os
@@ -24,6 +25,10 @@ import torch
 
 from micro_sam.evaluation.model_comparison import _enhance_image
 from micro_sam.automatic_segmentation import get_predictor_and_segmenter, automatic_instance_segmentation
+
+from pydantic import BaseModel
+import uuid
+import json
 
 def run_automatic_instance_segmentation(
     image: np.ndarray,
@@ -148,6 +153,60 @@ os.makedirs(SEGMENT_DIR, exist_ok=True)
 async def root():
     return {"message": "欢迎使用图片上传服务"}
 
+# 任务存储的根目录路径
+TASKS_ROOT_DIR_PATH = "tasks"
+
+class Task(BaseModel):
+    description: str
+
+def ensure_task_dir_exists(task_id: str):
+    task_dir_path = os.path.join(TASKS_ROOT_DIR_PATH, task_id)
+    if not os.path.exists(task_dir_path):
+        os.makedirs(task_dir_path)
+
+def load_task(task_id: str):
+    task_file_path = os.path.join(TASKS_ROOT_DIR_PATH, task_id, "task.json")
+    if not os.path.exists(task_file_path):
+        return None
+    with open(task_file_path, 'r') as file:
+        return json.load(file)
+
+def save_task(task_id: str, description: str):
+    ensure_task_dir_exists(task_id)
+    task_file_path = os.path.join(TASKS_ROOT_DIR_PATH, task_id, "task.json")
+    with open(task_file_path, 'w') as file:
+        json.dump({"description": description}, file)
+
+@app.post("/tasks/", response_model=dict)
+def create_task(task: Task):
+    task_id = str(uuid.uuid4())
+    save_task(task_id, task.description)
+    return {"task_id": task_id}
+
+@app.get("/tasks/{task_id}", response_model=Task)
+def read_task(task_id: str):
+    task_data = load_task(task_id)
+    if task_data is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task_data
+
+@app.put("/tasks/{task_id}")
+def update_task(task_id: str, task: Task):
+    if load_task(task_id) is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    save_task(task_id, task.description)
+    return {"message": "Task updated"}
+
+@app.delete("/tasks/{task_id}")
+def delete_task(task_id: str):
+    task_dir_path = os.path.join(TASKS_ROOT_DIR_PATH, task_id)
+    if not os.path.exists(task_dir_path):
+        raise HTTPException(status_code=404, detail="Task not found")
+    import shutil
+    shutil.rmtree(task_dir_path)
+    return {"message": "Task deleted"}
+
+
 @app.post("/upload/")
 async def upload_image(file: UploadFile = File(...)):
     # 检查文件是否为图片（可选）
@@ -251,3 +310,6 @@ def download_csv():
         return Response(content=csv_content, headers=headers)
     except Exception as e:
         return {"error": f"Failed to load or process the file: {str(e)}"}
+
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="localhost", port=8000, reload=True)
