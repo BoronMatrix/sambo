@@ -1,5 +1,11 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException, Query,Response
 from fastapi.responses import JSONResponse
+from fastapi import FastAPI
+from fastapi.openapi.docs import (
+    get_redoc_html,
+    get_swagger_ui_html,
+    get_swagger_ui_oauth2_redirect_html,
+)
 import shutil
 import os
 import io
@@ -139,7 +145,34 @@ def calculate_statistics(properties):
     
     return all_stats
 
-app = FastAPI()
+# custom-docs-ui-assets
+app = FastAPI(docs_url=None, redoc_url=None)
+
+@app.get("/docs", include_in_schema=False)
+async def custom_swagger_ui_html():
+    return get_swagger_ui_html(
+        openapi_url=app.openapi_url,
+        title=app.title + " - Swagger UI",
+        oauth2_redirect_url=app.swagger_ui_oauth2_redirect_url,
+        swagger_js_url="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js",
+        swagger_css_url="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css",
+    )
+
+
+@app.get(app.swagger_ui_oauth2_redirect_url, include_in_schema=False)
+async def swagger_ui_redirect():
+    return get_swagger_ui_oauth2_redirect_html()
+
+
+@app.get("/redoc", include_in_schema=False)
+async def redoc_html():
+    return get_redoc_html(
+        openapi_url=app.openapi_url,
+        title=app.title + " - ReDoc",
+        redoc_js_url="https://unpkg.com/redoc@2/bundles/redoc.standalone.js",
+    )
+
+
 
 # 创建一个目录用于保存上传的图片
 UPLOAD_DIR = "uploads"
@@ -157,6 +190,8 @@ async def root():
 TASKS_ROOT_DIR_PATH = "tasks"
 
 class Task(BaseModel):
+    id: str
+    name: str
     description: str
 
 def ensure_task_dir_exists(task_id: str):
@@ -169,18 +204,22 @@ def load_task(task_id: str):
     if not os.path.exists(task_file_path):
         return None
     with open(task_file_path, 'r') as file:
-        return json.load(file)
+        task_data = json.load(file)
+        return Task(**task_data)  # 转换为 Task 实例
 
-def save_task(task_id: str, description: str):
-    ensure_task_dir_exists(task_id)
-    task_file_path = os.path.join(TASKS_ROOT_DIR_PATH, task_id, "task.json")
+def save_task(task: Task):
+    ensure_task_dir_exists(task.id)
+    task_file_path = os.path.join(TASKS_ROOT_DIR_PATH, task.id, "task.json")
     with open(task_file_path, 'w') as file:
-        json.dump({"description": description}, file)
+        json.dump(task.model_dump(), file)  # 将 Task 模型转换为字典并保存
+
 
 @app.post("/tasks/", response_model=dict)
 def create_task(task: Task):
     task_id = str(uuid.uuid4())
-    save_task(task_id, task.description)
+    # 创建一个新的 Task 实例，并分配新的 task_id
+    new_task = Task(id=task_id, name=task.name, description=task.description)
+    save_task(new_task)
     return {"task_id": task_id}
 
 @app.get("/tasks/{task_id}", response_model=Task)
@@ -194,7 +233,14 @@ def read_task(task_id: str):
 def update_task(task_id: str, task: Task):
     if load_task(task_id) is None:
         raise HTTPException(status_code=404, detail="Task not found")
-    save_task(task_id, task.description)
+    
+    # 更新字段
+    updated_task = Task(
+        id=task_id,
+        name=task.name,
+        description=task.description
+    )
+    save_task(updated_task)
     return {"message": "Task updated"}
 
 @app.delete("/tasks/{task_id}")
@@ -205,6 +251,19 @@ def delete_task(task_id: str):
     import shutil
     shutil.rmtree(task_dir_path)
     return {"message": "Task deleted"}
+
+@app.get("/tasks/", response_model=List[str])
+def list_all_task_ids():
+    if not os.path.exists(TASKS_ROOT_DIR_PATH):
+        return []
+
+    # 获取 TASKS_ROOT_DIR_PATH 下的所有子目录名作为 task_id
+    task_ids = [
+        d for d in os.listdir(TASKS_ROOT_DIR_PATH)
+        if os.path.isdir(os.path.join(TASKS_ROOT_DIR_PATH, d))
+    ]
+    
+    return task_ids
 
 
 @app.post("/upload/")
