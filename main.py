@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException, Query,Response
+from fastapi import FastAPI, File, UploadFile, HTTPException, Query,Response, Form
 from fastapi.responses import JSONResponse
 from fastapi import FastAPI
 from fastapi.openapi.docs import (
@@ -191,13 +191,14 @@ TASKS_ROOT_DIR_PATH = "tasks"
 
 class Task(BaseModel):
     id: str
-    name: str
-    description: str
+    name: str = "Untitled Task"
+    description: str = ""
 
 def ensure_task_dir_exists(task_id: str):
     task_dir_path = os.path.join(TASKS_ROOT_DIR_PATH, task_id)
     if not os.path.exists(task_dir_path):
         os.makedirs(task_dir_path)
+    return task_dir_path
 
 def load_task(task_id: str):
     task_file_path = os.path.join(TASKS_ROOT_DIR_PATH, task_id, "task.json")
@@ -215,12 +216,50 @@ def save_task(task: Task):
 
 
 @app.post("/tasks/", response_model=dict)
-def create_task(task: Task):
-    task_id = str(uuid.uuid4())
+async def create_task(task_json: str = Form(""),  # 设置默认值为空字符串
+                      file: UploadFile = File(...)):
+    # 如果 task_json 为空，则使用默认任务信息
+    if not task_json.strip():
+        task_dict = {"id":"talk some shit", "name": "Untitled Task", "description": ""}
+    else:
+        try:
+            task_dict = json.loads(task_json)
+        except json.JSONDecodeError:
+            raise HTTPException(status_code=400, detail="Invalid JSON format for task")
+    
+    # 检查文件是否为图片（可选）
+    if not file.content_type.startswith("image/"):
+        return JSONResponse(status_code=400, content={"message": "文件不是图片"})
+
     # 创建一个新的 Task 实例，并分配新的 task_id
+    task = Task(**task_dict)
+    task_id = str(uuid.uuid4())
     new_task = Task(id=task_id, name=task.name, description=task.description)
     save_task(new_task)
-    return {"task_id": task_id}
+
+    task_dir = ensure_task_dir_exists(task_id)
+    image_dir = os.path.join(task_dir, "images")
+    os.makedirs(image_dir, exist_ok=True)
+    image_path = os.path.join(image_dir, file.filename)
+
+     # 保存图片
+    with open(image_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    try:
+        prediction = run_automatic_instance_segmentation(image_path, ndim=2, model_type=model_choice)
+        regionprops = calculate_region_properties(prediction)
+        all_stats = calculate_statistics(regionprops)
+
+        # 保存 numpy 文件
+        np.save(os.path.join(task_dir, 'prediction.npy'), prediction)
+        np.save(os.path.join(task_dir, 'regionprops.npy'), regionprops)
+        np.save(os.path.join(task_dir, 'all_stats.npy'), all_stats)
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"图像处理失败: {e}")
+
+    return {"task_id": task_id, "message": "图片上传成功"}
 
 @app.get("/tasks/{task_id}", response_model=Task)
 def read_task(task_id: str):
@@ -230,17 +269,25 @@ def read_task(task_id: str):
     return task_data
 
 @app.put("/tasks/{task_id}")
-def update_task(task_id: str, task: Task):
-    if load_task(task_id) is None:
+def update_task(task_id: str, task_update: Task):
+    existing_task = load_task(task_id)
+    if existing_task is None:
         raise HTTPException(status_code=404, detail="Task not found")
-    
-    # 更新字段
-    updated_task = Task(
-        id=task_id,
-        name=task.name,
-        description=task.description
-    )
+
+    # 只更新提供了值的字段
+    updated_data = existing_task.model_dump()  # 获取现有数据的字典形式
+    update_data = task_update.model_dump(exclude_unset=True)  # 获取需要更新的数据，排除未设置的字段
+
+    # 更新现有数据
+    updated_data.update(update_data)
+
+    # 确保 id 不被更改
+    updated_data['id'] = task_id
+
+    # 创建并保存更新后的任务
+    updated_task = Task(**updated_data)
     save_task(updated_task)
+
     return {"message": "Task updated"}
 
 @app.delete("/tasks/{task_id}")
