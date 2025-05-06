@@ -1,5 +1,5 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException, Query,Response, Form
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi import FastAPI
 from fastapi.openapi.docs import (
     get_redoc_html,
@@ -312,6 +312,52 @@ def list_all_task_ids():
     
     return task_ids
 
+@app.get("/tasks/{task_id}/image/file")
+async def get_image(task_id: str):
+    """
+    根据 task_id 自动查找并返回任务目录下唯一的图片。
+    """
+    task_dir = os.path.join(TASKS_ROOT_DIR_PATH, task_id, "images")
+    
+    # 检查目录是否存在
+    if not os.path.isdir(task_dir):
+        raise HTTPException(status_code=404, detail="Task directory not found")
+
+    # 获取目录中的所有文件
+    images = [f for f in os.listdir(task_dir) if os.path.isfile(os.path.join(task_dir, f))]
+    
+    # 如果没有找到任何图片或找到多于一张图片，则抛出异常
+    if len(images) != 1:
+        raise HTTPException(status_code=400, detail="Expected exactly one image in the task directory")
+    
+    image_path = os.path.join(task_dir, images[0])
+    
+    return FileResponse(image_path, filename=images[0])
+
+@app.get("/tasks/{task_id}/image/info")
+async def get_image_info(task_id: str):
+    task_dir = os.path.join(TASKS_ROOT_DIR_PATH, task_id, "images")
+    
+    if not os.path.isdir(task_dir):
+        raise HTTPException(status_code=404, detail="Task directory not found")
+
+    images = [f for f in os.listdir(task_dir) if os.path.isfile(os.path.join(task_dir, f))]
+    
+    if len(images) != 1:
+        raise HTTPException(status_code=400, detail="Expected exactly one image in the task directory")
+    
+    image_path = os.path.join(task_dir, images[0])
+
+    with Image.open(image_path) as img:
+        width, height = img.size
+
+    return {
+        "filename": images[0],
+        "width": width,
+        "height": height
+    }
+
+
 
 @app.post("/upload/")
 async def upload_image(file: UploadFile = File(...)):
@@ -342,13 +388,15 @@ async def upload_image(file: UploadFile = File(...)):
 # 定义一个接口来读取 prediction.npy 的指定位置值
 @app.get("/predictions/value")
 async def get_prediction_value(
+    task_id: str,
     x: int = Query(..., description="X coordinate (row index)"),
     y: int = Query(..., description="Y coordinate (column index)")
 ):
     try:
-        # 加载 prediction.npy 文件
-        predictions = np.load("prediction.npy")
-        regionprops = np.load("regionprops.npy", allow_pickle=True)
+        # 构建 prediction.npy 文件的完整路径
+        task_dir = os.path.join(TASKS_ROOT_DIR_PATH, task_id)
+        predictions = np.load(os.path.join(task_dir, 'prediction.npy'))
+        regionprops = np.load(os.path.join(task_dir, 'regionprops.npy'), allow_pickle=True)
         
         # 检查数组是否为二维
         if predictions.ndim != 2:
@@ -374,13 +422,16 @@ async def get_prediction_value(
         raise HTTPException(status_code=500, detail=f"Error reading the file: {str(e)}")
 
 @app.get("/stats/")
-async def get_statistics():
+async def get_statistics(task_id: str):
     """
     读取 all_stats.npy 文件并返回其内容。
     """
     try:
+        # 构建 prediction.npy 文件的完整路径
+        task_dir = os.path.join(TASKS_ROOT_DIR_PATH, task_id)
+
         # 加载 all_stats.npy 文件
-        all_stats = np.load("all_stats.npy", allow_pickle=True).item()
+        all_stats = np.load(os.path.join(task_dir, "all_stats.npy"), allow_pickle=True).item()
         return {"all_stats": all_stats}
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="File 'all_stats.npy' not found.")
@@ -388,20 +439,24 @@ async def get_statistics():
         raise HTTPException(status_code=500, detail=f"Error reading the file: {str(e)}")
     
 @app.get("/download-csv")
-def download_csv():
+def download_csv(task_id: str):
     """
     将 regionprops.npy 转换为 CSV 格式并提供下载。
     """
     try:
+        # 构建 prediction.npy 文件的完整路径
+        task_dir = os.path.join(TASKS_ROOT_DIR_PATH, task_id)
+
         # 使用 NumPy 加载 .npy 文件
-        data = np.load("regionprops.npy", allow_pickle=True)
+        data = np.load(os.path.join(task_dir, "regionprops.npy"), allow_pickle=True)
 
         # 检查数据是否是包含字典的数组
         if not isinstance(data, np.ndarray) or not all(isinstance(item, dict) for item in data):
             return {"error": "Data is not an array of dictionaries."}
 
         # 将 NumPy 数组中的字典转换为 Pandas DataFrame
-        df = pd.DataFrame(data)
+        data_list = data.tolist()
+        df = pd.DataFrame(data_list)
 
         # 将 DataFrame 转换为 CSV 格式的字符串
         csv_buffer = io.StringIO()
