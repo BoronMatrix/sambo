@@ -357,34 +357,6 @@ async def get_image_info(task_id: str):
         "height": height
     }
 
-
-
-@app.post("/upload/")
-async def upload_image(file: UploadFile = File(...)):
-    # 检查文件是否为图片（可选）
-    if not file.content_type.startswith("image/"):
-        return JSONResponse(status_code=400, content={"message": "文件不是图片"})
-
-    # 保存上传的图片到指定目录
-    file_path = os.path.join(UPLOAD_DIR, file.filename)
-    # with open(file_path, "wb") as buffer:
-    #     shutil.copyfileobj(file.file, buffer)
-    
-    # 原始文档用file.file, 要保存用file_path
-    prediction = run_automatic_instance_segmentation(file.file, ndim=2, model_type=model_choice)
-
-    regionprops = calculate_region_properties(prediction)
-
-    # 计算统计值
-    all_stats = calculate_statistics(regionprops)
-
-    # 保存为二进制文件
-    np.save('prediction.npy', prediction)
-    np.save('regionprops.npy', regionprops)
-    np.save('all_stats.npy', all_stats)
-
-    return {"message": "图片上传成功", "file_path": file_path}
-
 # 定义一个接口来读取 prediction.npy 的指定位置值
 @app.get("/predictions/value")
 async def get_prediction_value(
