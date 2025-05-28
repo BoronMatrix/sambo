@@ -22,6 +22,7 @@ from PIL import Image
 from typing import List
 from skimage import measure
 from typing import List, Dict
+from pathlib import Path
 
 import h5py
 import numpy as np
@@ -333,8 +334,17 @@ async def get_image(task_id: str):
         raise HTTPException(status_code=400, detail="Expected exactly one image in the task directory")
     
     image_path = os.path.join(task_dir, images[0])
+
+    # 读取原图
+    original_image = cv2.imread(image_path)
+
+    # 获取原始图像的扩展名
+    suffix = Path(image_path).suffix
+
+    temp_file = tempfile.NamedTemporaryFile(suffix=suffix, delete=False)
+    cv2.imwrite(temp_file.name, original_image)
     
-    return FileResponse(image_path, filename=images[0])
+    return FileResponse(temp_file.name, filename=images[0])
 
 # 返回原图叠加分割图层的图像
 @app.get("/tasks/{task_id}/image/overlay")
