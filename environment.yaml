@@ -2,6 +2,11 @@ name: sam
 channels:
     - conda-forge
 dependencies:
+    - pip:
+        - git+https://github.com/ChaoningZhang/MobileSAM.git
+        - fastapi
+        - uvicorn
+        - python-multipart
     - nifty >=1.2.3
     - imagecodecs
     - magicgui
@@ -28,5 +33,3 @@ dependencies:
     - timm
     - xarray <2025.3.0
     - zarr <3.0
-    - pip:
-        - git+https://github.com/ChaoningZhang/MobileSAM.git

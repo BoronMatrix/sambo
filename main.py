@@ -208,8 +208,15 @@ def load_task(task_id: str):
     if not os.path.exists(task_file_path):
         return None
     with open(task_file_path, 'r') as file:
-        task_data = json.load(file)
-        return Task(**task_data)  # 转换为 Task 实例
+        try:
+            task_data = json.load(file)
+            task_data["id"] = task_id  # 确保 id 来自目录名
+            return Task(**task_data)
+        except json.JSONDecodeError:
+            print(f"Invalid JSON in {task_file_path}")
+            return None
+    
+        
 
 def save_task(task: Task):
     ensure_task_dir_exists(task.id)
@@ -302,18 +309,25 @@ def delete_task(task_id: str):
     shutil.rmtree(task_dir_path)
     return {"message": "Task deleted"}
 
-@app.get("/tasks/", response_model=List[str])
-def list_all_task_ids():
+@app.get("/tasks/", response_model=List[Task])
+def list_all_task_attributes():
     if not os.path.exists(TASKS_ROOT_DIR_PATH):
         return []
 
-    # 获取 TASKS_ROOT_DIR_PATH 下的所有子目录名作为 task_id
-    task_ids = [
-        d for d in os.listdir(TASKS_ROOT_DIR_PATH)
-        if os.path.isdir(os.path.join(TASKS_ROOT_DIR_PATH, d))
-    ]
-    
-    return task_ids
+    all_tasks = []
+
+    for task_id in os.listdir(TASKS_ROOT_DIR_PATH):
+        task_dir_path = os.path.join(TASKS_ROOT_DIR_PATH, task_id)
+
+        # 只处理目录
+        if not os.path.isdir(task_dir_path):
+            continue
+
+        task = load_task(task_id)
+        if task is not None:
+            all_tasks.append(task)
+
+    return all_tasks
 
 @app.get("/tasks/{task_id}/image/file")
 async def get_image(task_id: str):
