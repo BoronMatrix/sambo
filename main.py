@@ -573,7 +573,101 @@ async def get_attribute_scatterplot(task_id: str, attribute_x: str, attribute_y:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating scatter plot: {str(e)}")
 
+# 新增接口：生成PSD
+@app.get("/tasks/{task_id}/image/psd")
+async def get_attribute_psd(task_id: str, attribute: str = 'diameter'):
+    try:
+        # 构建 regionprops.npy 文件的完整路径
+        task_dir = os.path.join(TASKS_ROOT_DIR_PATH, task_id)
+        regionprops = np.load(os.path.join(task_dir, 'regionprops.npy'), allow_pickle=True)
 
+        # 提取指定属性的数据
+        attribute_values = [prop[attribute] for prop in regionprops if attribute in prop]
+
+        if not attribute_values:
+            raise HTTPException(status_code=400, detail=f"Attribute '{attribute}' not found in regionprops.")
+
+        # 转换为DataFrame
+        df_all_diameters = pd.DataFrame(attribute_values, columns=['Equivalent Diameter'])
+
+        # 过滤数据：最小设为 0.00001（模拟0）
+        min_x = 0.01
+        max_x = 50
+        df_all_diameters = df_all_diameters[(df_all_diameters['Equivalent Diameter'] >= min_x) &
+                                            (df_all_diameters['Equivalent Diameter'] <= max_x)]
+
+        # 排序用于绘制CDF
+        sorted_diameters = np.sort(df_all_diameters['Equivalent Diameter'])
+        cdf = np.arange(len(sorted_diameters)) / float(len(sorted_diameters))  # 归一化累计比例
+
+        # 添加起始点（从0开始）
+        sorted_diameters_with_start = np.insert(sorted_diameters, 0, min_x)
+        cdf_with_start = np.insert(cdf, 0, 0)
+
+        # 创建图形和主坐标轴（左侧）
+        fig, ax1 = plt.subplots(figsize=(10, 6))
+
+        # 绘制平滑的 CDF 曲线（使用左侧 y 轴）
+        ax1.plot(sorted_diameters_with_start, cdf_with_start * 100, 'b-', lw=2)
+        ax1.set_xlabel("Equivalent Diameter", fontsize=12)
+        ax1.set_ylabel("Cumulative Percentage (%)", color='b')
+        ax1.tick_params(axis='y', labelcolor='b')
+
+        # 设置 x 轴为 log scale，并设置视觉上的“从0开始”
+        # ax1.set_xscale('log')
+        ax1.set_xlim(min_x, max_x)
+
+        # 设置网格线
+        ax1.grid(True, which="both", linestyle='--', linewidth=0.5)
+
+        # 创建右侧 y 轴（对应粒径大小的分布）
+        ax2 = ax1.twinx()
+
+        # 计算分布数据（手动计算以避免覆盖）
+        #bins = np.logspace(np.log10(min_x), np.log10(max_x), num=20)
+        bins = np.linspace(min_x, max_x, num=20)
+        counts, bin_edges = np.histogram(df_all_diameters['Equivalent Diameter'], bins=bins)
+
+        # 在右侧y轴上绘制分布折线图
+        bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+
+        ax2.bar(bin_centers, counts, width=(max_x - min_x)/20, color='r', alpha=0.4)
+
+        # 在右侧y轴上叠加分布折线图
+        ax2.plot(bin_centers, counts, 'r-', lw=2)
+
+        ax2.set_ylabel("Number of Particles", color='r')
+        ax2.tick_params(axis='y', labelcolor='r')
+
+        # 计算 D10/D50/D90
+        d10 = np.percentile(df_all_diameters['Equivalent Diameter'], 10)
+        d50 = np.percentile(df_all_diameters['Equivalent Diameter'], 50)
+        d90 = np.percentile(df_all_diameters['Equivalent Diameter'], 90)
+
+        # 在左上角添加标注
+        text_str = f"D10: {d10:.2f}\nD50: {d50:.2f}\nD90: {d90:.2f}"
+        props = dict(boxstyle='round', facecolor='white', alpha=0.8)
+        ax1.text(0.05, 0.95, text_str, transform=ax1.transAxes, fontsize=10, verticalalignment='top', bbox=props)
+
+        # 添加图例（合并左右图例）
+        lines_1, labels_1 = ax1.get_legend_handles_labels()
+        lines_2, labels_2 = ax2.get_legend_handles_labels()
+        ax1.legend(lines_1 + lines_2, labels_1 + labels_2, loc='upper right')
+
+        # 设置标题
+        plt.title(f"Cumulative Particle Size Distribution with Equivalent Diameter Line", fontsize=14)
+
+        # 保存为临时文件
+        temp_file = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
+        plt.savefig(temp_file.name)
+        plt.close()
+
+        return FileResponse(temp_file.name, filename=f"psd.png")
+
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="File 'regionprops.npy' not found.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generating psd: {str(e)}")
 
 
 @app.get("/tasks/{task_id}/image/info")
