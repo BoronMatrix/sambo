@@ -10,7 +10,7 @@ coverage.xml
 __pycache__/
 *.py[cod]
 *$py.class
-
+tasks
 # C extensions
 *.so
 
