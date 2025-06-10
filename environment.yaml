@@ -3,6 +3,7 @@ channels:
     - conda-forge
 dependencies:
     - pip:
+    #   - git+https://github.com/ChaoningZhang/MobileSAM.git
         - fastapi
         - uvicorn
         - python-multipart
