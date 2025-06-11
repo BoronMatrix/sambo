@@ -6,7 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="53d29cc9-20b1-42ee-82b8-947aa87c1d0b" name="更改" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/micro_sam/automatic_segmentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/micro_sam/automatic_segmentation.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/micro_sam/instance_segmentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/micro_sam/instance_segmentation.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -287,7 +287,7 @@
       <workItem from="1748912386165" duration="29508000" />
       <workItem from="1749459158942" duration="7065000" />
       <workItem from="1749546580297" duration="13542000" />
-      <workItem from="1749620148355" duration="9441000" />
+      <workItem from="1749620148355" duration="13063000" />
     </task>
     <servers />
   </component>
@@ -333,7 +333,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/micro_sam/instance_segmentation.py</url>
-          <line>859</line>
+          <line>861</line>
           <option name="timeStamp" value="11" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
@@ -341,11 +341,16 @@
           <line>793</line>
           <option name="timeStamp" value="12" />
         </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$USER_HOME$/miniconda3/envs/sam/Lib/site-packages/segment_anything/modeling/image_encoder.py</url>
+          <line>6</line>
+          <option name="timeStamp" value="13" />
+        </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/sambo$main.coverage" NAME="main 覆盖结果" MODIFIED="1749629542501" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/sambo$main.coverage" NAME="main 覆盖结果" MODIFIED="1749633137239" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/sambo$annotator_tracking.coverage" NAME="annotator_tracking 覆盖结果" MODIFIED="1747898682915" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/examples" />
     <SUITE FILE_PATH="coverage/sambo$test.coverage" NAME="test 覆盖结果" MODIFIED="1748327935380" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/sambo$annotator_2d.coverage" NAME="annotator_2d 覆盖结果" MODIFIED="1748337881124" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/examples" />
