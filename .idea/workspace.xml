@@ -7,44 +7,6 @@
     <list default="true" id="53d29cc9-20b1-42ee-82b8-947aa87c1d0b" name="更改" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/micro_sam/instance_segmentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/micro_sam/instance_segmentation.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/137bcfe6-fb6d-409e-8845-7814ccc9672e/all_stats.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/137bcfe6-fb6d-409e-8845-7814ccc9672e/images/10.0#10ul-2_0063.bmp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/137bcfe6-fb6d-409e-8845-7814ccc9672e/prediction.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/137bcfe6-fb6d-409e-8845-7814ccc9672e/regionprops.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/137bcfe6-fb6d-409e-8845-7814ccc9672e/task.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/77931154-47b0-4bf9-8666-46e7cdf54d5c/all_stats.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/77931154-47b0-4bf9-8666-46e7cdf54d5c/images/1_0002.bmp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/77931154-47b0-4bf9-8666-46e7cdf54d5c/prediction.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/77931154-47b0-4bf9-8666-46e7cdf54d5c/regionprops.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/77931154-47b0-4bf9-8666-46e7cdf54d5c/task.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/7a131eae-a730-4106-87c2-33f58cd05ebe/all_stats.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/7a131eae-a730-4106-87c2-33f58cd05ebe/images/jinge_0002.bmp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/7a131eae-a730-4106-87c2-33f58cd05ebe/prediction.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/7a131eae-a730-4106-87c2-33f58cd05ebe/regionprops.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/7a131eae-a730-4106-87c2-33f58cd05ebe/task.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/7ca150cc-bda5-4ac1-a44d-709697258302/all_stats.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/7ca150cc-bda5-4ac1-a44d-709697258302/prediction.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/7ca150cc-bda5-4ac1-a44d-709697258302/regionprops.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/7ca150cc-bda5-4ac1-a44d-709697258302/task.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/81913436-708a-405c-a920-df97746ccce8/all_stats.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/81913436-708a-405c-a920-df97746ccce8/prediction.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/81913436-708a-405c-a920-df97746ccce8/regionprops.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/81913436-708a-405c-a920-df97746ccce8/task.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/be21d3b5-601d-4cf6-908b-7e37a002d90d/all_stats.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/be21d3b5-601d-4cf6-908b-7e37a002d90d/images/3_0095.bmp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/be21d3b5-601d-4cf6-908b-7e37a002d90d/prediction.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/be21d3b5-601d-4cf6-908b-7e37a002d90d/regionprops.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/be21d3b5-601d-4cf6-908b-7e37a002d90d/task.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/c5aaac2e-f774-4512-a71b-2c5c1cbf59e4/all_stats.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/c5aaac2e-f774-4512-a71b-2c5c1cbf59e4/images/3_0019.bmp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/c5aaac2e-f774-4512-a71b-2c5c1cbf59e4/prediction.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/c5aaac2e-f774-4512-a71b-2c5c1cbf59e4/regionprops.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/c5aaac2e-f774-4512-a71b-2c5c1cbf59e4/task.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/fb161433-0980-4c18-8cd8-5a8437838d56/all_stats.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/fb161433-0980-4c18-8cd8-5a8437838d56/images/1_0001.bmp" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/fb161433-0980-4c18-8cd8-5a8437838d56/prediction.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/fb161433-0980-4c18-8cd8-5a8437838d56/regionprops.npy" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/tasks/fb161433-0980-4c18-8cd8-5a8437838d56/task.json" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -325,7 +287,7 @@
       <workItem from="1748912386165" duration="29508000" />
       <workItem from="1749459158942" duration="7065000" />
       <workItem from="1749546580297" duration="13542000" />
-      <workItem from="1749620148355" duration="7540000" />
+      <workItem from="1749620148355" duration="8004000" />
     </task>
     <servers />
   </component>
@@ -371,14 +333,14 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/micro_sam/instance_segmentation.py</url>
-          <line>863</line>
+          <line>861</line>
           <option name="timeStamp" value="11" />
         </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/sambo$main.coverage" NAME="main 覆盖结果" MODIFIED="1749626551729" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/sambo$main.coverage" NAME="main 覆盖结果" MODIFIED="1749628170392" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/sambo$annotator_tracking.coverage" NAME="annotator_tracking 覆盖结果" MODIFIED="1747898682915" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/examples" />
     <SUITE FILE_PATH="coverage/sambo$test.coverage" NAME="test 覆盖结果" MODIFIED="1748327935380" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/sambo$annotator_2d.coverage" NAME="annotator_2d 覆盖结果" MODIFIED="1748337881124" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/examples" />

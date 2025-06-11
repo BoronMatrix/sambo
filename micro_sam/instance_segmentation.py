@@ -786,9 +786,7 @@ def get_unetr(
         resize_input=True,
     )
     if decoder_state is not None:
-        print("#####decoder_state")
         unetr_state_dict = unetr.state_dict()
-        print(decoder_state)
         for k, v in unetr_state_dict.items():
             if not k.startswith("encoder"):
                 if flexible_load_checkpoint:  # Whether allow reinitalization of params, if not found.
@@ -800,7 +798,7 @@ def get_unetr(
 
                 else:  # Whether be strict on finding the parameter in the decoder state.
                     if k not in decoder_state:
-                        unetr_state_dict.pop(k, None)
+                       del unetr_state_dict[k]
                         # raise RuntimeError(f"The parameters for '{k}' could not be found.")
                     else:
                         unetr_state_dict[k] = decoder_state[k]
