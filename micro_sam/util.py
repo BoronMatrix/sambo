@@ -351,6 +351,7 @@ def get_sam_model(
         progress_bar = True
         # Check if we have to download the model.
         # If we do and have a progress bar factory, then we over-write the progress bar.
+        print(get_cache_directory())
         if not os.path.exists(os.path.join(get_cache_directory(), model_type)) and progress_bar_factory is not None:
             progress_bar = progress_bar_factory(model_type)
 
