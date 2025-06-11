@@ -287,7 +287,7 @@
       <workItem from="1748912386165" duration="29508000" />
       <workItem from="1749459158942" duration="7065000" />
       <workItem from="1749546580297" duration="13542000" />
-      <workItem from="1749620148355" duration="8004000" />
+      <workItem from="1749620148355" duration="8138000" />
     </task>
     <servers />
   </component>
@@ -333,7 +333,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/micro_sam/instance_segmentation.py</url>
-          <line>861</line>
+          <line>860</line>
           <option name="timeStamp" value="11" />
         </line-breakpoint>
       </breakpoints>

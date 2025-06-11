@@ -787,6 +787,7 @@ def get_unetr(
     )
     if decoder_state is not None:
         unetr_state_dict = unetr.state_dict()
+        del unetr_state_dict['b']
         for k, v in unetr_state_dict.items():
             if not k.startswith("encoder"):
                 if flexible_load_checkpoint:  # Whether allow reinitalization of params, if not found.
@@ -798,10 +799,8 @@ def get_unetr(
 
                 else:  # Whether be strict on finding the parameter in the decoder state.
                     if k not in decoder_state:
-                       del unetr_state_dict[k]
-                        # raise RuntimeError(f"The parameters for '{k}' could not be found.")
-                    else:
-                        unetr_state_dict[k] = decoder_state[k]
+                        raise RuntimeError(f"The parameters for '{k}' could not be found.")
+                    unetr_state_dict[k] = decoder_state[k]
 
         unetr.load_state_dict(unetr_state_dict)
 
