@@ -68,7 +68,7 @@ def run_automatic_instance_segmentation(
     predictor, segmenter = get_predictor_and_segmenter(
         model_type=model_type,  # choice of the Segment Anything model
         checkpoint=checkpoint_path,  # overwrite to pass your own finetuned model.
-        # device=device,  # the device to run the model inference.
+        device=device,  # the device to run the model inference.
         amg=False,  # set the automatic segmentation mode to AIS.
         is_tiled=(tile_shape is not None),  # whether to run automatic segmentation with tiling.
     )
