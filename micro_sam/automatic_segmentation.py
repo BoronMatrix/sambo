@@ -43,8 +43,6 @@ def get_predictor_and_segmenter(
     """
     # Get the device
     device = util.get_device(device=device)
-    print(device)
-
     # Get the predictor and state for Segment Anything models.
     predictor, state = util.get_sam_model(
         model_type=model_type, device=device, checkpoint_path=checkpoint, return_state=True,
