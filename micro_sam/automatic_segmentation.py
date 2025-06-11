@@ -43,17 +43,18 @@ def get_predictor_and_segmenter(
     """
     # Get the device
     device = util.get_device(device=device)
+
     # Get the predictor and state for Segment Anything models.
     predictor, state = util.get_sam_model(
         model_type=model_type, device=device, checkpoint_path=checkpoint, return_state=True,
     )
+
     if amg is None:
         amg = "decoder_state" not in state
 
     if amg:
         decoder = None
     else:
-
         if "decoder_state" not in state:
             raise RuntimeError("You have passed 'amg=False', but your model does not contain a segmentation decoder.")
         decoder_state = state["decoder_state"]
