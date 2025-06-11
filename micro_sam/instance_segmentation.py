@@ -798,6 +798,7 @@ def get_unetr(
 
                 else:  # Whether be strict on finding the parameter in the decoder state.
                     if k not in decoder_state:
+                        print(k)
                         raise RuntimeError(f"The parameters for '{k}' could not be found.")
                     unetr_state_dict[k] = decoder_state[k]
 
