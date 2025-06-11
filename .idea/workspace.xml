@@ -4,10 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="53d29cc9-20b1-42ee-82b8-947aa87c1d0b" name="更改" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/micro_sam/instance_segmentation.py" beforeDir="false" afterPath="$PROJECT_DIR$/micro_sam/instance_segmentation.py" afterDir="false" />
-    </list>
+    <list default="true" id="53d29cc9-20b1-42ee-82b8-947aa87c1d0b" name="更改" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -287,7 +284,7 @@
       <workItem from="1748912386165" duration="29508000" />
       <workItem from="1749459158942" duration="7065000" />
       <workItem from="1749546580297" duration="13542000" />
-      <workItem from="1749620148355" duration="8138000" />
+      <workItem from="1749620148355" duration="8185000" />
     </task>
     <servers />
   </component>
@@ -333,7 +330,7 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/micro_sam/instance_segmentation.py</url>
-          <line>860</line>
+          <line>859</line>
           <option name="timeStamp" value="11" />
         </line-breakpoint>
       </breakpoints>

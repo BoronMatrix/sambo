@@ -787,7 +787,6 @@ def get_unetr(
     )
     if decoder_state is not None:
         unetr_state_dict = unetr.state_dict()
-        del unetr_state_dict['b']
         for k, v in unetr_state_dict.items():
             if not k.startswith("encoder"):
                 if flexible_load_checkpoint:  # Whether allow reinitalization of params, if not found.
