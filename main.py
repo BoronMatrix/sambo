@@ -85,18 +85,18 @@ def run_automatic_instance_segmentation(
 
     return prediction
 
-def calculate_region_properties(labels, magnitude):
+def calculate_region_properties(labels, Magnification):
     """
     计算每个区域的指定属性。
     """
     regions = measure.regionprops(labels)
     properties = []
     for region in regions:
-        # 提取基本属性并应用量值进行单位转换
-        area = region.area * (magnitude ** 2)
-        perimeter = region.perimeter * magnitude
-        major_axis_length = region.major_axis_length * magnitude
-        minor_axis_length = region.minor_axis_length * magnitude
+        # 提取基本属性并应用量值进行单位转换 
+        area = region.area * ((Magnification / 100) ** 2)
+        perimeter = region.perimeter * (Magnification / 100)
+        major_axis_length = region.major_axis_length * (Magnification / 100)
+        minor_axis_length = region.minor_axis_length * (Magnification / 100)
         eccentricity = region.eccentricity
 
         # 计算派生属性
@@ -190,7 +190,7 @@ class Task(BaseModel):
     id: str
     name: str = "Untitled Task"
     description: str = ""
-    magnitude: float
+    Magnification: float
     unit_of_measurement: str
 
 def ensure_task_dir_exists(user_id: str, task_id: str):
@@ -230,7 +230,7 @@ async def create_task(user_id: str = '',
         task_dict = {"id":"talk some shit", 
                      "name": "Untitled Task", 
                      "description": "", 
-                     "magnitude":0.5, 
+                     "Magnification":0.5, 
                      "unit_of_measurement":"nm"}
     else:
         try:
@@ -248,7 +248,7 @@ async def create_task(user_id: str = '',
     new_task = Task(id=task_id, 
                     name=task.name, 
                     description=task.description, 
-                    magnitude=task.magnitude, 
+                    Magnification=task.Magnification, 
                     unit_of_measurement=task.unit_of_measurement)
     save_task(user_id, new_task)
 
@@ -263,7 +263,7 @@ async def create_task(user_id: str = '',
 
     try:
         prediction = run_automatic_instance_segmentation(image_path, ndim=2, model_type=model_choice)
-        regionprops = calculate_region_properties(prediction, task.magnitude)
+        regionprops = calculate_region_properties(prediction, task.Magnification)
         all_stats = calculate_statistics(regionprops)
 
         # 保存 numpy 文件
