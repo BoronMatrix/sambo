@@ -93,10 +93,10 @@ def calculate_region_properties(labels, Magnification):
     properties = []
     for region in regions:
         # 提取基本属性并应用量值进行单位转换 
-        area = region.area * ((Magnification / 100) ** 2)
-        perimeter = region.perimeter * (Magnification / 100)
-        major_axis_length = region.major_axis_length * (Magnification / 100)
-        minor_axis_length = region.minor_axis_length * (Magnification / 100)
+        area = (region.area / (Magnification / 100)) ** 2
+        perimeter = region.perimeter / (Magnification / 100)
+        major_axis_length = region.major_axis_length / (Magnification / 100)
+        minor_axis_length = region.minor_axis_length / (Magnification / 100)
         eccentricity = region.eccentricity
 
         # 计算派生属性
