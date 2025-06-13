@@ -85,19 +85,18 @@ def run_automatic_instance_segmentation(
 
     return prediction
 
-def calculate_region_properties(labels):
+def calculate_region_properties(labels, magnitude):
     """
     计算每个区域的指定属性。
     """
     regions = measure.regionprops(labels)
     properties = []
     for region in regions:
-        # 提取基本属性
-        area = region.area
-        perimeter = region.perimeter
-        bbox = region.bbox
-        major_axis_length = region.major_axis_length
-        minor_axis_length = region.minor_axis_length
+        # 提取基本属性并应用量值进行单位转换
+        area = region.area * (magnitude ** 2)
+        perimeter = region.perimeter * magnitude
+        major_axis_length = region.major_axis_length * magnitude
+        minor_axis_length = region.minor_axis_length * magnitude
         eccentricity = region.eccentricity
 
         # 计算派生属性
@@ -191,6 +190,8 @@ class Task(BaseModel):
     id: str
     name: str = "Untitled Task"
     description: str = ""
+    magnitude: float
+    unit_of_measurement: str
 
 def ensure_task_dir_exists(user_id: str, task_id: str):
     task_dir_path = os.path.join(TASKS_ROOT_DIR_PATH, user_id, task_id)
@@ -226,7 +227,11 @@ async def create_task(user_id: str = '',
                       file: UploadFile = File(...)):
     # 如果 task_json 为空，则使用默认任务信息
     if not task_json.strip():
-        task_dict = {"id":"talk some shit", "name": "Untitled Task", "description": ""}
+        task_dict = {"id":"talk some shit", 
+                     "name": "Untitled Task", 
+                     "description": "", 
+                     "magnitude":0.5, 
+                     "unit_of_measurement":"nm"}
     else:
         try:
             task_dict = json.loads(task_json)
@@ -240,7 +245,11 @@ async def create_task(user_id: str = '',
     # 创建一个新的 Task 实例，并分配新的 task_id
     task = Task(**task_dict)
     task_id = str(uuid.uuid4())
-    new_task = Task(id=task_id, name=task.name, description=task.description)
+    new_task = Task(id=task_id, 
+                    name=task.name, 
+                    description=task.description, 
+                    magnitude=task.magnitude, 
+                    unit_of_measurement=task.unit_of_measurement)
     save_task(user_id, new_task)
 
     task_dir = ensure_task_dir_exists(user_id, task_id)
@@ -254,7 +263,7 @@ async def create_task(user_id: str = '',
 
     try:
         prediction = run_automatic_instance_segmentation(image_path, ndim=2, model_type=model_choice)
-        regionprops = calculate_region_properties(prediction)
+        regionprops = calculate_region_properties(prediction, task.magnitude)
         all_stats = calculate_statistics(regionprops)
 
         # 保存 numpy 文件
@@ -518,12 +527,14 @@ async def get_attribute_histogram(user_id: str, task_id: str, attribute: str):
 
         if not attribute_values:
             raise HTTPException(status_code=400, detail=f"Attribute '{attribute}' not found in regionprops.")
+        
+        unit = load_task(user_id, task_id).unit_of_measurement
 
         # 生成直方图
         plt.figure()
         plt.hist(attribute_values, bins=20, edgecolor='black')
         plt.title(f'Histogram of {attribute}')
-        plt.xlabel(attribute)
+        plt.xlabel(f"{attribute} ({unit})")
         plt.ylabel('Frequency')
 
         # 保存直方图为临时文件
@@ -553,12 +564,14 @@ async def get_attribute_scatterplot(user_id: str, task_id: str, attribute_x: str
         if not x_values or not y_values:
             raise HTTPException(status_code=400, detail=f"One or both attributes '{attribute_x}' and '{attribute_y}' not found in regionprops.")
 
+        unit = load_task(user_id, task_id).unit_of_measurement
+        
         # 生成散点图
         plt.figure()
         plt.scatter(x_values, y_values)
         plt.title(f'Scatter Plot of {attribute_x} vs {attribute_y}')
-        plt.xlabel(attribute_x)
-        plt.ylabel(attribute_y)
+        plt.xlabel(f"{attribute_x} ({unit})")
+        plt.ylabel(f"{attribute_y} ({unit})")
 
         # 保存散点图为临时文件
         temp_file = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
@@ -585,6 +598,8 @@ async def get_attribute_psd(user_id: str, task_id: str, attribute: str = 'diamet
 
         if not attribute_values:
             raise HTTPException(status_code=400, detail=f"Attribute '{attribute}' not found in regionprops.")
+        
+        unit = load_task(user_id, task_id).unit_of_measurement
 
         # 转换为DataFrame
         df_all_diameters = pd.DataFrame(attribute_values, columns=['Equivalent Diameter'])
@@ -608,7 +623,7 @@ async def get_attribute_psd(user_id: str, task_id: str, attribute: str = 'diamet
 
         # 绘制平滑的 CDF 曲线（使用左侧 y 轴）
         ax1.plot(sorted_diameters_with_start, cdf_with_start * 100, 'b-', lw=2)
-        ax1.set_xlabel("Equivalent Diameter", fontsize=12)
+        ax1.set_xlabel(f"Equivalent Diameter ({unit})", fontsize=12)
         ax1.set_ylabel("Cumulative Percentage (%)", color='b')
         ax1.tick_params(axis='y', labelcolor='b')
 
@@ -719,8 +734,9 @@ async def get_prediction_value(
         
         label = int(predictions[x, y])
         attribute = regionprops[label]
+        unit = load_task(user_id, task_id).unit_of_measurement
         # 返回指定位置的值
-        return {"label": label, "attribute": attribute}
+        return {"label": label, "attribute": attribute, "unit":unit}
     
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="File 'prediction.npy' not found.")
@@ -740,7 +756,10 @@ async def get_statistics(user_id: str, task_id: str):
 
         # 加载 all_stats.npy 文件
         all_stats = np.load(os.path.join(task_dir, "all_stats.npy"), allow_pickle=True).item()
-        return {"all_stats": all_stats}
+
+        unit = load_task(user_id, task_id).unit_of_measurement
+
+        return {"all_stats": all_stats, "unit":unit}
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="File 'all_stats.npy' not found.")
     except Exception as e:
@@ -792,4 +811,4 @@ def download_csv(user_id: str, task_id: str):
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="localhost", port=8015)
+    uvicorn.run("main:app", host="localhost", port=8015, reload=True)
