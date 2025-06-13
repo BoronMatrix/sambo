@@ -178,12 +178,7 @@ async def redoc_html():
 
 
 # 创建一个目录用于保存上传的图片
-UPLOAD_DIR = "uploads"
-MODEL_DIR = "models/vit_b_lm"
-SEGMENT_DIR = "segmentations"
 model_choice = "vit_b_lm"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-os.makedirs(SEGMENT_DIR, exist_ok=True)
 
 @app.get("/")
 async def root():
@@ -197,14 +192,14 @@ class Task(BaseModel):
     name: str = "Untitled Task"
     description: str = ""
 
-def ensure_task_dir_exists(task_id: str):
-    task_dir_path = os.path.join(TASKS_ROOT_DIR_PATH, task_id)
+def ensure_task_dir_exists(user_id: str, task_id: str):
+    task_dir_path = os.path.join(TASKS_ROOT_DIR_PATH, user_id, task_id)
     if not os.path.exists(task_dir_path):
         os.makedirs(task_dir_path)
     return task_dir_path
 
-def load_task(task_id: str):
-    task_file_path = os.path.join(TASKS_ROOT_DIR_PATH, task_id, "task.json")
+def load_task(user_id: str, task_id: str):
+    task_file_path = os.path.join(TASKS_ROOT_DIR_PATH, user_id, task_id, "task.json")
     if not os.path.exists(task_file_path):
         return None
     with open(task_file_path, 'r') as file:
@@ -218,15 +213,16 @@ def load_task(task_id: str):
     
         
 
-def save_task(task: Task):
-    ensure_task_dir_exists(task.id)
-    task_file_path = os.path.join(TASKS_ROOT_DIR_PATH, task.id, "task.json")
+def save_task(user_id: str, task: Task):
+    ensure_task_dir_exists(user_id, task.id)
+    task_file_path = os.path.join(TASKS_ROOT_DIR_PATH, user_id, task.id, "task.json")
     with open(task_file_path, 'w') as file:
         json.dump(task.model_dump(), file)  # 将 Task 模型转换为字典并保存
 
 
-@app.post("/tasks/", response_model=dict)
-async def create_task(task_json: str = Form(""),  # 设置默认值为空字符串
+@app.post("/{user_id}/tasks/", response_model=dict)
+async def create_task(user_id: str = '',
+                      task_json: str = Form(""),  # 设置默认值为空字符串
                       file: UploadFile = File(...)):
     # 如果 task_json 为空，则使用默认任务信息
     if not task_json.strip():
@@ -245,9 +241,9 @@ async def create_task(task_json: str = Form(""),  # 设置默认值为空字符�
     task = Task(**task_dict)
     task_id = str(uuid.uuid4())
     new_task = Task(id=task_id, name=task.name, description=task.description)
-    save_task(new_task)
+    save_task(user_id, new_task)
 
-    task_dir = ensure_task_dir_exists(task_id)
+    task_dir = ensure_task_dir_exists(user_id, task_id)
     image_dir = os.path.join(task_dir, "images")
     os.makedirs(image_dir, exist_ok=True)
     image_path = os.path.join(image_dir, file.filename)
@@ -271,16 +267,16 @@ async def create_task(task_json: str = Form(""),  # 设置默认值为空字符�
 
     return {"task_id": task_id, "message": "图片上传成功"}
 
-@app.get("/tasks/{task_id}", response_model=Task)
-def read_task(task_id: str):
-    task_data = load_task(task_id)
+@app.get("/{user_id}/tasks/{task_id}", response_model=Task)
+def read_task(user_id: str, task_id: str):
+    task_data = load_task(user_id, task_id)
     if task_data is None:
         raise HTTPException(status_code=404, detail="Task not found")
     return task_data
 
-@app.put("/tasks/{task_id}")
-def update_task(task_id: str, task_update: Task):
-    existing_task = load_task(task_id)
+@app.put("/{user_id}/tasks/{task_id}")
+def update_task(user_id: str, task_id: str, task_update: Task):
+    existing_task = load_task(user_id, task_id)
     if existing_task is None:
         raise HTTPException(status_code=404, detail="Task not found")
 
@@ -296,45 +292,45 @@ def update_task(task_id: str, task_update: Task):
 
     # 创建并保存更新后的任务
     updated_task = Task(**updated_data)
-    save_task(updated_task)
+    save_task(user_id, updated_task)
 
     return {"message": "Task updated"}
 
-@app.delete("/tasks/{task_id}")
-def delete_task(task_id: str):
-    task_dir_path = os.path.join(TASKS_ROOT_DIR_PATH, task_id)
+@app.delete("/{user_id}/tasks/{task_id}")
+def delete_task(user_id: str, task_id: str):
+    task_dir_path = os.path.join(TASKS_ROOT_DIR_PATH, user_id, task_id)
     if not os.path.exists(task_dir_path):
         raise HTTPException(status_code=404, detail="Task not found")
     import shutil
     shutil.rmtree(task_dir_path)
     return {"message": "Task deleted"}
 
-@app.get("/tasks/", response_model=List[Task])
-def list_all_task_attributes():
+@app.get("/{user_id}/tasks/", response_model=List[Task])
+def list_all_task_attributes(user_id: str):
     if not os.path.exists(TASKS_ROOT_DIR_PATH):
         return []
 
     all_tasks = []
 
-    for task_id in os.listdir(TASKS_ROOT_DIR_PATH):
-        task_dir_path = os.path.join(TASKS_ROOT_DIR_PATH, task_id)
+    for task_id in os.listdir(os.path.join(TASKS_ROOT_DIR_PATH, user_id)):
+        task_dir_path = os.path.join(TASKS_ROOT_DIR_PATH, user_id, task_id)
 
         # 只处理目录
         if not os.path.isdir(task_dir_path):
             continue
 
-        task = load_task(task_id)
+        task = load_task(user_id, task_id)
         if task is not None:
             all_tasks.append(task)
 
     return all_tasks
 
-@app.get("/tasks/{task_id}/image/file")
-async def get_image(task_id: str):
+@app.get("/{user_id}/tasks/{task_id}/image/file")
+async def get_image(user_id: str, task_id: str):
     """
     根据 task_id 自动查找并返回任务目录下唯一的图片。
     """
-    task_dir = os.path.join(TASKS_ROOT_DIR_PATH, task_id, "images")
+    task_dir = os.path.join(TASKS_ROOT_DIR_PATH, user_id, task_id, "images")
     
     # 检查目录是否存在
     if not os.path.isdir(task_dir):
@@ -361,11 +357,11 @@ async def get_image(task_id: str):
     return FileResponse(temp_file.name, filename=images[0])
 
 # 返回原图叠加分割图层的图像
-@app.get("/tasks/{task_id}/image/overlay")
-async def get_overlay_image(task_id: str):
+@app.get("/{user_id}/tasks/{task_id}/image/overlay")
+async def get_overlay_image(user_id: str, task_id: str):
     try:
         # 获取任务目录
-        task_dir = os.path.join(TASKS_ROOT_DIR_PATH, task_id)
+        task_dir = os.path.join(TASKS_ROOT_DIR_PATH, user_id, task_id)
 
         # 获取原图路径
         image_dir = os.path.join(task_dir, "images")
@@ -407,11 +403,11 @@ async def get_overlay_image(task_id: str):
 
 # 新增接口：切换分割图层的显隐
 
-@app.get("/tasks/{task_id}/image/toggle_overlay")
-async def toggle_overlay(task_id: str, show_overlay: bool = Query(True, description="是否显示分割图层")):
+@app.get("/{user_id}/tasks/{task_id}/image/toggle_overlay")
+async def toggle_overlay(user_id: str, task_id: str, show_overlay: bool = Query(True, description="是否显示分割图层")):
     try:
         # 获取任务目录
-        task_dir = os.path.join(TASKS_ROOT_DIR_PATH, task_id)
+        task_dir = os.path.join(TASKS_ROOT_DIR_PATH, user_id, task_id)
 
         # 获取原图路径
         image_dir = os.path.join(task_dir, "images")
@@ -455,11 +451,11 @@ async def toggle_overlay(task_id: str, show_overlay: bool = Query(True, descript
         raise HTTPException(status_code=500, detail=f"Error generating overlay image: {str(e)}")
 
 # 新增接口：高亮点击的分割图层
-@app.get("/tasks/{task_id}/image/highlight")
-async def highlight_clicked_segment(task_id: str, x: int, y: int):
+@app.get("/{user_id}/tasks/{task_id}/image/highlight")
+async def highlight_clicked_segment(user_id: str, task_id: str, x: int, y: int):
     try:
         # 获取任务目录
-        task_dir = os.path.join(TASKS_ROOT_DIR_PATH, task_id)
+        task_dir = os.path.join(TASKS_ROOT_DIR_PATH, user_id, task_id)
 
         # 获取原图路径
         image_dir = os.path.join(task_dir, "images")
@@ -507,11 +503,11 @@ async def highlight_clicked_segment(task_id: str, x: int, y: int):
         raise HTTPException(status_code=500, detail=f"Error highlighting segment: {str(e)}")
 
 # 新增接口：生成单个属性的直方图
-@app.get("/tasks/{task_id}/image/histogram")
-async def get_attribute_histogram(task_id: str, attribute: str):
+@app.get("/{user_id}/tasks/{task_id}/image/histogram")
+async def get_attribute_histogram(user_id: str, task_id: str, attribute: str):
     try:
         # 构建 regionprops.npy 文件的完整路径
-        task_dir = os.path.join(TASKS_ROOT_DIR_PATH, task_id)
+        task_dir = os.path.join(TASKS_ROOT_DIR_PATH, user_id, task_id)
         regionprops = np.load(os.path.join(task_dir, 'regionprops.npy'), allow_pickle=True)
 
         # 提取指定属性的数据
@@ -540,11 +536,11 @@ async def get_attribute_histogram(task_id: str, attribute: str):
         raise HTTPException(status_code=500, detail=f"Error generating histogram: {str(e)}")
 
 # 新增接口：生成属性分析的散点图
-@app.get("/tasks/{task_id}/image/scatterplot")
-async def get_attribute_scatterplot(task_id: str, attribute_x: str, attribute_y: str):
+@app.get("/{user_id}/tasks/{task_id}/image/scatterplot")
+async def get_attribute_scatterplot(user_id: str, task_id: str, attribute_x: str, attribute_y: str):
     try:
         # 构建 regionprops.npy 文件的完整路径
-        task_dir = os.path.join(TASKS_ROOT_DIR_PATH, task_id)
+        task_dir = os.path.join(TASKS_ROOT_DIR_PATH, user_id, task_id)
         regionprops = np.load(os.path.join(task_dir, 'regionprops.npy'), allow_pickle=True)
 
         # 提取指定属性的数据
@@ -574,11 +570,11 @@ async def get_attribute_scatterplot(task_id: str, attribute_x: str, attribute_y:
         raise HTTPException(status_code=500, detail=f"Error generating scatter plot: {str(e)}")
 
 # 新增接口：生成PSD
-@app.get("/tasks/{task_id}/image/psd")
-async def get_attribute_psd(task_id: str, attribute: str = 'diameter'):
+@app.get("/{user_id}/tasks/{task_id}/image/psd")
+async def get_attribute_psd(user_id: str, task_id: str, attribute: str = 'diameter'):
     try:
         # 构建 regionprops.npy 文件的完整路径
-        task_dir = os.path.join(TASKS_ROOT_DIR_PATH, task_id)
+        task_dir = os.path.join(TASKS_ROOT_DIR_PATH, user_id, task_id)
         regionprops = np.load(os.path.join(task_dir, 'regionprops.npy'), allow_pickle=True)
 
         # 提取指定属性的数据
@@ -670,9 +666,9 @@ async def get_attribute_psd(task_id: str, attribute: str = 'diameter'):
         raise HTTPException(status_code=500, detail=f"Error generating psd: {str(e)}")
 
 
-@app.get("/tasks/{task_id}/image/info")
-async def get_image_info(task_id: str):
-    task_dir = os.path.join(TASKS_ROOT_DIR_PATH, task_id, "images")
+@app.get("/{user_id}/tasks/{task_id}/image/info")
+async def get_image_info(user_id: str, task_id: str):
+    task_dir = os.path.join(TASKS_ROOT_DIR_PATH, user_id, task_id, "images")
     
     if not os.path.isdir(task_dir):
         raise HTTPException(status_code=404, detail="Task directory not found")
@@ -696,13 +692,14 @@ async def get_image_info(task_id: str):
 # 定义一个接口来读取 prediction.npy 的指定位置值
 @app.get("/predictions/value")
 async def get_prediction_value(
+    user_id: str,
     task_id: str,
     x: int = Query(..., description="X coordinate (row index)"),
     y: int = Query(..., description="Y coordinate (column index)")
 ):
     try:
         # 构建 prediction.npy 文件的完整路径
-        task_dir = os.path.join(TASKS_ROOT_DIR_PATH, task_id)
+        task_dir = os.path.join(TASKS_ROOT_DIR_PATH, user_id, task_id)
         predictions = np.load(os.path.join(task_dir, 'prediction.npy'))
         regionprops = np.load(os.path.join(task_dir, 'regionprops.npy'), allow_pickle=True)
         
@@ -730,13 +727,13 @@ async def get_prediction_value(
         raise HTTPException(status_code=500, detail=f"Error reading the file: {str(e)}")
 
 @app.get("/stats/")
-async def get_statistics(task_id: str):
+async def get_statistics(user_id: str, task_id: str):
     """
     读取 all_stats.npy 文件并返回其内容。
     """
     try:
         # 构建 prediction.npy 文件的完整路径
-        task_dir = os.path.join(TASKS_ROOT_DIR_PATH, task_id)
+        task_dir = os.path.join(TASKS_ROOT_DIR_PATH, user_id, task_id)
 
         # 加载 all_stats.npy 文件
         all_stats = np.load(os.path.join(task_dir, "all_stats.npy"), allow_pickle=True).item()
@@ -747,13 +744,13 @@ async def get_statistics(task_id: str):
         raise HTTPException(status_code=500, detail=f"Error reading the file: {str(e)}")
     
 @app.get("/download-csv")
-def download_csv(task_id: str):
+def download_csv(user_id: str, task_id: str):
     """
     将 regionprops.npy 转换为 CSV 格式并提供下载。
     """
     try:
         # 构建 prediction.npy 文件的完整路径
-        task_dir = os.path.join(TASKS_ROOT_DIR_PATH, task_id)
+        task_dir = os.path.join(TASKS_ROOT_DIR_PATH, user_id, task_id)
 
         # 使用 NumPy 加载 .npy 文件
         data = np.load(os.path.join(task_dir, "regionprops.npy"), allow_pickle=True)
