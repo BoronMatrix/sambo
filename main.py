@@ -309,6 +309,9 @@ def delete_task(user_id: str, task_id: str):
 def list_all_task_attributes(user_id: str):
     if not os.path.exists(TASKS_ROOT_DIR_PATH):
         return []
+    
+    if not os.path.exists(os.path.join(TASKS_ROOT_DIR_PATH, user_id)):
+        return []
 
     all_tasks = []
 
