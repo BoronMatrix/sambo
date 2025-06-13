@@ -90,29 +90,44 @@ def calculate_region_properties(labels, Magnification):
     计算每个区域的指定属性。
     """
     regions = measure.regionprops(labels)
+
     properties = []
+
     for region in regions:
-        # 提取基本属性并应用量值进行单位转换 
-        area = (region.area / (Magnification / 100)) ** 2
+        # 获取该区域的掩码
+        m = (labels == region.label)
+
+        # 提取基本属性并应用放大倍率进行单位转换 
+        area = region.area / (Magnification / 100)
         perimeter = region.perimeter / (Magnification / 100)
-        major_axis_length = region.major_axis_length / (Magnification / 100)
-        minor_axis_length = region.minor_axis_length / (Magnification / 100)
+
+        contours, _ = cv2.findContours(m.astype(np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)  # 查找掩码的轮廓
+        
+        for contour in contours:
+            rect = cv2.minAreaRect(contour)  # 获取最小包围矩形
+            width, height = rect[1]  # 获取矩形的宽和高
+            max_length = max(width, height) / (Magnification / 100) # 最大边长
+            min_length = min(width, height) / (Magnification / 100) # 最小边长
+        
+        #major_axis_length = region.major_axis_length / (Magnification / 100)
+        #minor_axis_length = region.minor_axis_length / (Magnification / 100)
         eccentricity = region.eccentricity
 
         # 计算派生属性
         diameter = np.sqrt(area / np.pi) * 2  # 粒径（等效圆直径）
-        aspect_ratio = major_axis_length / minor_axis_length if minor_axis_length > 0 else 0  # 长宽比
+        aspect_ratio = max_length / min_length if min_length > 0 else 0  # 长宽比
         sphericity = (4 * np.pi * area) / (perimeter ** 2) if perimeter > 0 else 0  # 球形度
-        shape_factor = area / (major_axis_length ** 2) if major_axis_length > 0 else 0  # 形状因子 A/R
+        shape_factor = area / (max_length ** 2) if max_length > 0 else 0  # 形状因子 A/R
         smoothness = 1 - (eccentricity)  # 平滑度（1 - 偏心率）
+            
 
         # 存储属性
         props = {
             "area": area,
             "perimeter": perimeter,
             "diameter": diameter,
-            "major_axis_length": major_axis_length,
-            "minor_axis_length": minor_axis_length,
+            "major_axis_length": max_length,
+            "minor_axis_length": min_length,
             "aspect_ratio": aspect_ratio,
             "sphericity": sphericity,
             "shape_factor": shape_factor,
@@ -230,7 +245,7 @@ async def create_task(user_id: str = '',
         task_dict = {"id":"talk some shit", 
                      "name": "Untitled Task", 
                      "description": "", 
-                     "Magnification":0.5, 
+                     "Magnification":100, 
                      "unit_of_measurement":"nm"}
     else:
         try:
